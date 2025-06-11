@@ -1,0 +1,80 @@
+[project]
+name = "{{ project_slug }}"
+version = "0.1.0"
+description = "{{ description }}"
+authors = [
+    { name = "{{ author_name }}", email = "{{ author_email }}" }
+]
+readme = "README.md"
+requires-python = ">={{ python_version }}"
+dependencies = [
+    "fastapi[standard]>=0.110.0",
+    "pydantic>=2.6.0",
+    "fastapi-utils[all]>=0.8",
+    "pydantic-settings>=2.1.0",
+    "starlette-context>=0.4.0",
+    {% if include_database == "postgresql" -%}
+    "sqlalchemy>=2.0.25",
+    "asyncpg>=0.29.0",
+    {% endif -%}
+    {% if include_database == "mysql" -%}
+    "sqlalchemy>=2.0.25",
+    "aiomysql>=0.2.0",
+    {% endif -%}
+    {% if include_alembic -%}
+    "alembic>=1.13.0",
+    {% endif -%}
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.6",
+    {% if include_redis -%}
+    "aioredis>=5.0.0",
+    {% endif -%}
+    {% if include_celery -%}
+    "celery>=5.3.0",
+    {% endif -%}
+    "greenlet>=3.2.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    {% if include_tests -%}
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "httpx>=0.26.0",
+    {% endif -%}
+    "black>=24.0.0",
+    "isort>=5.13.0",
+    "ruff>=0.2.0",
+    "mypy>=1.8.0",
+    "pre-commit>=3.6.0",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py{{ python_version.replace(".", "") }}']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.ruff]
+target-version = "py{{ python_version.replace('.', '') }}"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "{{ python_version }}"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
+asyncio_mode = "auto"

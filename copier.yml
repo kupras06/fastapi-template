@@ -1,0 +1,97 @@
+_templates_suffix: .jinja
+_envops:
+  block_start_string: "{%"
+  block_end_string: "%}"
+  variable_start_string: "{{"
+  variable_end_string: "}}"
+  comment_start_string: "{#"
+  comment_end_string: "#}"
+
+_min_copier_version: "9.0.0"
+
+project_name:
+  type: str
+  help: "What is your project name? "
+
+project_slug:
+  type: str
+  help: "Project slug (folder name) "
+  default: "{{ project_name | lower | replace(' ', '_') | replace('-', '_') }}"
+  validator: >-
+    {% if not (project_slug | regex_search('^[a-z][a-z0-9_]*$')) %}
+    project_slug must be a valid Python package name
+    {% endif %}
+
+description:
+  type: str
+  help: "Brief description of your project"
+  default: "{{ project_name }} Service project built with modern Python using FastAPI"
+
+author_name:
+  type: str
+  help: "Author's full name: "
+  default: "Name"
+
+author_email:
+  type: str
+  help: "Author's email address: "
+  validator: >-
+    {% if not (author_email | regex_search('^[^@]+@[^@]+\.[^@]+$')) %}
+    Please enter a valid email address
+    {% endif %}
+
+python_version:
+  type: str
+  help: "Python version to use"
+  default: "3.13"
+  choices:
+    - "3.13"
+    - "3.12"
+
+include_database:
+  type: str
+  help: "Which database do you want to use?"
+  default: "none"
+  choices:
+    - "none"
+    - "postgresql"
+    - "mysql"
+
+include_tests:
+  type: bool
+  help: "Include test suite?"
+  default: true
+
+include_docker:
+  type: bool
+  help: "Include Docker configuration?"
+  default: true
+
+# include_redis:
+#   type: bool
+#   help: "Include Redis support (caching, sessions)?"
+#   default: false
+
+include_celery:
+  type: bool
+  help: "Include Celery for background tasks?"
+  default: false
+  when: "{{ include_redis }}"
+
+api_prefix:
+  type: str
+  help: "API prefix path"
+  default: "/api/v1"
+
+cors_origins:
+  type: str
+  help: "CORS allowed origins (comma-separated)"
+  default: "http://localhost:3000,http://localhost:8080"
+
+_migrations:
+  - version: "1.0.0"
+    description: "Initial FastAPI template"
+  - version: "1.1.0" 
+    description: "Added authentication support"
+  - version: "1.2.0"
+    description: "Added Redis and Celery support"

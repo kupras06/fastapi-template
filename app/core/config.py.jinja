@@ -1,0 +1,84 @@
+"""Config Module"""
+
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class _Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    # App Configuration
+    PROJECT_NAME: str = "{{ project_name }}"
+    VERSION: str = "0.1.0"
+    DEBUG: bool = False
+    HOST: str = "0.0.0.0"
+    PORT: int = 8000
+    API_V1_STR: str = "{{ api_prefix }}"
+
+    # CORS
+    CORS_ORIGINS: list[str] = [{% for origin in cors_origins.split(',') %}"{{ origin.strip() }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+
+    {% if include_database != "none" -%}
+    # Database Configuration
+    {% if include_database == "postgresql" -%}
+    DATABASE_HOST: str = "localhost"
+    DATABASE_PORT: int = 5432
+    DATABASE_USER: str = "postgres"
+    DATABASE_PASSWORD: str = "password"
+    DATABASE_NAME: str = "{{ project_slug }}"
+
+    @property
+    def database_url(self) -> str:
+        """Database URL"""
+        return f"postgresql+asyncpg://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
+    {% elif include_database == "mysql" -%}
+    DATABASE_HOST: str = "localhost"
+    DATABASE_PORT: int = 3306
+    DATABASE_USER: str = "root"
+    DATABASE_PASSWORD: str = "password"
+    DATABASE_NAME: str = "{{ project_slug }}"
+
+    @property
+    def database_url(self) -> str:
+        """Database URL"""
+        return f"mysql+aiomysql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
+    {% endif -%}
+
+    {% endif -%}
+    # Security Configuration
+    SECRET_KEY: str = "your-secret-key-change-this-in-production"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    {% if include_redis -%}
+    # Redis Configuration
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    REDIS_PASSWORD: Optional[str] = None
+
+    @property
+    def REDIS_URL(self) -> str:
+        if self.REDIS_PASSWORD:
+            return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+
+    {% endif -%}
+    {% if include_celery -%}
+    # Celery Configuration
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
+
+    {% endif -%}
+    # Logging
+    LOG_LEVEL: str = "INFO"
+
+
+@lru_cache
+def get_settings() -> _Settings:
+    return _Settings() # type: ignore
+
+
+Settings = get_settings()

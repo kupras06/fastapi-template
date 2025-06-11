@@ -1,0 +1,25 @@
+"""User Router"""
+
+from fastapi import APIRouter
+
+from app.resources.deps import CurrentUser{% if include_database != "none" %}, DbSession{% endif %}
+from app.resources.users.schemas import User
+
+router = APIRouter(prefix="/users")
+
+
+# In-memory storage for demo (replace with database operations)
+users_db: list[User] = []
+
+
+@router.get("", response_model=list[User])
+async def fetch_users(
+    current_user: CurrentUser,
+    {% if include_database != "none" %}db: DbSession,{% endif %}
+    skip: int = 0,
+    limit: int = 100,
+):
+    """Get all items with pagination"""
+    # Filter items by current user if auth is enabled
+    user_items = [item for item in users_db if item.id == current_user.id]
+    return user_items[skip : skip + limit]

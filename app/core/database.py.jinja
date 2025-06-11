@@ -1,0 +1,67 @@
+"""Database Config"""
+
+from collections.abc import Iterator
+from functools import lru_cache
+
+{% if include_database != "none" -%}
+from fastapi_utils.session import FastAPISessionMaker
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.orm import Session, declarative_base
+{% endif -%}
+{% if include_alembic -%}
+from alembic import command
+from alembic.config import Config
+{% endif -%}
+{% if include_redis -%}
+import aioredis
+{% endif -%}
+{% if include_celery -%}
+from celery import Celery
+{% endif -%}
+
+from app.core.config import Settings
+
+{% if include_database != "none" -%}
+
+Base = declarative_base()
+async def init_db() -> None:
+    """Initialize Database"""
+    engine = create_async_engine(
+        Settings.database_url,
+        echo=Settings.DEBUG,
+        future=True,
+    )
+    await engine.connect()
+    {% if include_alembic -%}
+    alembic_cfg = Config("alembic.ini")
+    command.upgrade(alembic_cfg, "head")
+    {% endif %}
+    # Create tables
+    Base.metadata.create_all(engine)
+    {% if include_redis -%}
+    # Create Redis connection pool
+    redis_pool = await aioredis.create_redis_pool(
+        address=Settings.REDIS_HOST,
+        port=Settings.REDIS_PORT,
+        db=Settings.REDIS_DB,
+        password=Settings.REDIS_PASSWORD,
+    )
+    {% endif %}
+    {% if include_celery -%}
+    # Create Celery app
+    celery_app = Celery(
+        "app.main:app",
+        backend=Settings.CELERY_RESULT_BACKEND,
+        broker=Settings.CELERY_BROKER_URL,
+    )
+    {% endif %}
+
+@lru_cache
+def _get_fastapi_sessionmaker() -> FastAPISessionMaker:
+    """This function could be replaced with a global variable if preferred"""
+    return FastAPISessionMaker(Settings.database_url)
+
+def get_async_db() -> Iterator[Session]:
+    """FastAPI dependency that provides a sqlalchemy session"""
+    yield from _get_fastapi_sessionmaker().get_db()
+{% endif -%}

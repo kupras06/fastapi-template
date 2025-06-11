@@ -1,0 +1,61 @@
+"""Resource Dependencies"""
+
+from __future__ import annotations
+
+from typing import Annotated
+
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+{% if include_database != "none" %}
+from sqlalchemy.orm import Session
+{% endif %}
+from starlette_context import context, request_cycle_context
+
+{% if include_database != "none" %}
+from app.core.database import get_async_db
+{% endif %}
+from app.schemas.auth import TokenUser
+
+oauth2_scheme = HTTPBearer()
+Token = Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]
+
+def get_current_user(token: Token):
+    """
+    Validate & decode JWT.
+    """
+    context["user"] = None
+    if not token.credentials:
+        return None
+    try:
+        current_user = {
+            "id": "sub",
+            "email": "email",
+        }
+        context["user"] = TokenUser(**current_user)
+        return current_user
+    except Exception:
+        return None
+
+
+UserOrNone = Annotated[TokenUser | None, Depends(get_current_user)]
+
+
+def get_verified_user(current_user: TokenUser):
+    """Validate & decode JWT."""
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+
+CurrentUser = Annotated[TokenUser, Depends(get_current_user)]
+{% if include_database != "none" %}
+DbSession = Annotated[Session, Depends(get_async_db)]
+{% endif %}
+
+async def app_context_deps(user: UserOrNone):
+    """App Context Setup"""
+    data = {}
+    data["user"] = user
+    # data["x_api_key"] = api_key
+    with request_cycle_context(data):
+        # with multi_repo_manager.repo_contexts():
+        yield

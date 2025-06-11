@@ -1,0 +1,186 @@
+# {{ project_name }}
+
+{{ description }}
+
+## Features
+
+- **FastAPI**: Modern, fast web framework for building APIs
+- **Python {{ python_version }}**: Latest Python features
+- **UV**: Fast Python package manager
+{% if include_database != "none" -%}
+- **Database**: {{ include_database.title() }} with SQLAlchemy
+- **Async Database**: Asynchronous database operations
+- **Migrations**: Database migrations with Alembic
+{% endif -%}
+- **Authentication**: JWT-based authentication
+{% if include_redis -%}
+- **Redis**: Caching and session storage
+{% endif -%}
+{% if include_celery -%}
+- **Celery**: Background task processing
+{% endif -%}
+{% if include_tests -%}
+- **Testing**: Comprehensive test suite with pytest
+{% endif -%}
+{% if include_docker -%}
+- **Docker**: Containerization support
+{% endif -%}
+- **Code Quality**: Black, isort, ruff, and mypy for code formatting and linting
+
+## Quick Start
+
+### Prerequisites
+
+- Python {{ python_version }}+
+- UV package manager (`pip install uv`)
+{% if include_database == "postgresql" -%}
+- PostgreSQL database
+{% elif include_database == "mysql" -%}
+- MySQL database
+{% endif -%}
+{% if include_redis -%}
+- Redis server
+{% endif -%}
+
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone <your-repo-url>
+cd {{ project_slug }}
+```
+
+2. Install dependencies:
+
+```bash
+uv sync
+```
+
+3. Set up environment variables:
+
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+{% if include_database != "none" -%}
+4. Run database migrations:
+
+```bash
+uv run alembic upgrade head
+```
+{% endif -%}
+5. Start the development server:
+
+```bash
+uv run uvicorn app.main:app --reload
+```
+
+The API will be available at `http://localhost:8000`
+
+### API Documentation
+
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+## Development
+
+### Code Formatting
+
+```bash
+# Format code
+uv run black .
+uv run isort .
+
+# Lint code
+uv run ruff check .
+uv run mypy .
+```
+
+{% if include_tests -%}
+### Testing
+
+```bash
+# Run tests
+uv run pytest
+
+# Run tests with coverage
+uv run pytest --cov=app --cov-report=html
+```
+
+{% endif -%}
+{% if include_docker -%}
+### Docker
+
+```bash
+# Build and run with Docker Compose
+docker-compose up --build
+
+# Or build manually
+docker build -t {{ project_slug }} .
+docker run -p 8000:8000 {{ project_slug }}
+```
+
+{% endif -%}
+## Project Structure
+
+```
+{{ project_slug }}/
+├── app/
+│   ├── __init__.py
+│   ├── main.py              # FastAPI application
+│   ├── resources/
+│   │   ├── users/
+│   │   │   ├── router.py    # API routes
+│   │   │   └── schemas.py     # Schemas
+│   │   └── deps.py           # Dependencies
+│   ├── core/
+│   │   ├── config.py        # Configuration
+{% if include_database != "none" -%}
+│   │   ├── database.py      # Database setup
+{% endif -%}
+│   ├── models/              # Database models
+│   ├── schemas/             # Pydantic schemas
+{% if include_database != "none" -%}
+│   └── crud/                # Database operations
+{% endif -%}
+{% if include_tests -%}
+├── tests/                   # Test files
+{% endif -%}
+├── pyproject.toml          # Project configuration
+{% if include_docker -%}
+├── Dockerfile              # Docker configuration
+├── docker-compose.yml      # Docker Compose
+{% endif -%}
+└── README.md
+```
+
+## Configuration
+
+Configuration is handled through environment variables. See `.env.example` for available options.
+
+Key settings:
+- `DEBUG`: Enable debug mode
+- `HOST`: Server host (default: 0.0.0.0)
+- `PORT`: Server port (default: 8000)
+{% if include_database != "none" -%}
+- `database_url`: Database connection string
+{% endif -%}
+- `SECRET_KEY`: JWT secret key (change in production!)
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
+
+## Author
+
+{{ author_name }} ({{ author_email }})
