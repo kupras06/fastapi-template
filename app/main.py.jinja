@@ -1,0 +1,57 @@
+"""App Container"""
+
+from contextlib import asynccontextmanager
+
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.core.config import Settings
+{% if include_database != "none" %}from app.core.database import init_db{% endif %}
+from app.resources import add_routers
+from app.resources.deps import app_context_deps
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI)
+    """Application Lifespan Hook"""
+    # Initialize database
+    {% if include_database != "none" %}
+    await init_db()
+    {% endif %}
+    yield
+
+
+app = FastAPI(
+    title="{{ project_name }}",
+    description="{{ description }}",
+    version="0.1.0",
+    lifespan=lifespan,
+    dependencies=[Depends(app_context_deps)],
+)
+
+# Set up CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=Settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include API routes
+add_routers(app)
+
+
+@app.get("/")
+async def root():
+    """Default root route"""
+    return {
+        "message": "Welcome to {{ project_name }}",
+        "version": "0.1.0",
+        "docs": "/docs"
+    }
+
+
+@app.get("/health")
+async def health_check():
+    """Health Check"""
+    return {"status": "healthy", "service": "{{ project_name }}"}
